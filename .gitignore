@@ -1,0 +1,17 @@
+node_modules
+dist
+out
+.DS_Store
+.eslintcache
+*.log*
+
+# --- LexVault local data (never commit) ---
+data/
+*.db
+*.db-wal
+*.db-shm
+*.OCT
+/Companies/
+.mca-profile/
+.env
+.env.*
