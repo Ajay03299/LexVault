@@ -15,6 +15,7 @@ import { createHash } from 'node:crypto'
 // Raw SQL imported at build time. Each .sql file ends with its own
 // `INSERT INTO schema_migrations(...)` so applying it records the version.
 import migration0001 from './migrations/0001_init.sql?raw'
+import migration0002 from './migrations/0002_fts_contentful.sql?raw'
 
 interface Migration {
   version: number
@@ -22,7 +23,10 @@ interface Migration {
   sql: string
 }
 
-const MIGRATIONS: Migration[] = [{ version: 1, name: '0001_init', sql: migration0001 }]
+const MIGRATIONS: Migration[] = [
+  { version: 1, name: '0001_init', sql: migration0001 },
+  { version: 2, name: '0002_fts_contentful', sql: migration0002 }
+]
 
 let db: Database.Database | null = null
 

@@ -11,17 +11,50 @@ export interface Company {
   updated_at: string
 }
 
+export interface DocumentRow {
+  id: number
+  company_id: number
+  form_type: string | null
+  title: string | null
+  filing_date: string | null
+  doc_class: string | null
+  download_state: string
+  organized_path: string | null
+  error_message: string | null
+}
+
+export interface SessionState {
+  status: 'idle' | 'opening' | 'awaiting_user' | 'working' | 'complete' | 'error'
+  companyId: number | null
+  cin: string | null
+  message: string
+}
+
+export interface ActivityEntry {
+  ts: string
+  level: 'info' | 'success' | 'warn' | 'error'
+  message: string
+  companyId?: number
+}
+
 export interface LexVaultAPI {
   companies: {
     list: () => Promise<Company[]>
-    create: (input: {
-      cin: string
-      name: string
-      entityType?: 'company' | 'llp'
-      status?: string
-    }) => Promise<Company>
+    create: (input: { cin: string; name: string; entityType?: 'company' | 'llp'; status?: string }) => Promise<Company>
     delete: (id: number) => Promise<{ ok: true }>
   }
+  documents: {
+    list: (companyId: number) => Promise<DocumentRow[]>
+    counts: (companyId: number) => Promise<Record<string, number>>
+  }
+  collection: {
+    start: (companyId: number) => Promise<SessionState>
+    resume: () => Promise<SessionState>
+    capture: () => Promise<{ html: string; screenshot: string }>
+    status: () => Promise<SessionState>
+    stop: () => Promise<SessionState>
+  }
+  onActivity: (cb: (entry: ActivityEntry) => void) => () => void
 }
 
 declare global {
