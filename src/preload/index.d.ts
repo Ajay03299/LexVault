@@ -37,6 +37,24 @@ export interface ActivityEntry {
   companyId?: number
 }
 
+export interface SearchHit {
+  id: number
+  form_type: string | null
+  title: string | null
+  filing_date: string | null
+  doc_class: string | null
+  snippet: string
+}
+
+export interface TimelineEvent {
+  company_id: number
+  event_date: string
+  kind: string
+  label: string | null
+  detail: string | null
+  document_id: number | null
+}
+
 export interface LexVaultAPI {
   companies: {
     list: () => Promise<Company[]>
@@ -46,6 +64,16 @@ export interface LexVaultAPI {
   documents: {
     list: (companyId: number) => Promise<DocumentRow[]>
     counts: (companyId: number) => Promise<Record<string, number>>
+    import: (companyId: number) => Promise<{ imported: number }>
+  }
+  intelligence: {
+    process: (companyId: number) => Promise<number>
+  }
+  search: {
+    query: (companyId: number, q: string) => Promise<SearchHit[]>
+  }
+  timeline: {
+    get: (companyId: number) => Promise<TimelineEvent[]>
   }
   collection: {
     start: (companyId: number) => Promise<SessionState>

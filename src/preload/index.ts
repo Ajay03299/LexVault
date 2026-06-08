@@ -10,7 +10,17 @@ const lexvault = {
   },
   documents: {
     list: (companyId: number) => ipcRenderer.invoke('documents:list', companyId),
-    counts: (companyId: number) => ipcRenderer.invoke('documents:counts', companyId)
+    counts: (companyId: number) => ipcRenderer.invoke('documents:counts', companyId),
+    import: (companyId: number) => ipcRenderer.invoke('documents:import', companyId)
+  },
+  intelligence: {
+    process: (companyId: number) => ipcRenderer.invoke('intelligence:process', companyId)
+  },
+  search: {
+    query: (companyId: number, q: string) => ipcRenderer.invoke('search:query', companyId, q)
+  },
+  timeline: {
+    get: (companyId: number) => ipcRenderer.invoke('timeline:get', companyId)
   },
   collection: {
     start: (companyId: number) => ipcRenderer.invoke('collection:start', companyId),

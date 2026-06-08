@@ -49,3 +49,44 @@
 ### Decisions logged
 - Local LLM for AI features (private) — Sprint 3. Engine: Firefox (matches reference).
 - User HAS a valid MCA login → we tune against the live portal.
+
+---
+## Session 5 — Sprint 2 (Intelligence layer) — BUILT & compiles ✅
+
+### What this unlocks (the real differentiation from a plain downloader)
+The searchable repository + corporate timeline. Operates on PDFs already on disk, so
+it's testable WITHOUT the live portal — via the new **Import PDFs** button.
+
+### New
+- `src/main/services/extraction/pdf.ts` — text-layer extraction via `unpdf` (pure-JS, no
+  native compile; dynamic import since ESM). ✅ TESTED: extracted text from a real PDF;
+  CIN/form/charge detectors all hit.
+- `src/main/db/search.repo.ts` — FTS5 index + company-scoped search w/ highlighted snippets; timeline query.
+- `src/main/services/intelligence/ingest.ts` — processCompany() indexes organised PDFs;
+  ingestPdfFiles() imports user-picked PDFs (classify→file→index). No-text pages flagged ocr_state='pending'.
+- `src/main/db/migrations/0002_fts_contentful.sql` — **bugfix migration**: original FTS was
+  contentless (snippet() returned empty); rebuilt as content-storing FTS5. Runs automatically on next launch.
+
+### Changed
+- `database.ts` (+migration 0002), `ipc/index.ts` (+documents:import, intelligence:process,
+  search:query, timeline:get), preload + types, `App.tsx` (tabs: Collect/Search/Timeline + Import PDFs),
+  `main.css`, `package.json` (+unpdf ^1.6.2).
+
+### Build proof
+- typecheck clean; electron-vite build OK; unpdf dynamic-imported; FTS bugfix verified with real text
+  (snippets highlight [HDFC]/[Director]/[Charge]; all terms match; company-scoped join works).
+
+### KNOWN / next
+- OCR fallback: text-layer path tested & shipping. Scanned/photo pages flagged ocr_state='pending';
+  OCR execution (tesseract.js + raster) is the next increment. MCA eForms are mostly digital-text, so
+  text extraction already covers the majority.
+- Still want the live-portal **capture HTML** to lock Sprint 1B download selectors.
+
+### NEXT (Sprint 3): structured intelligence — director/charge/capital extractors writing to those
+  tables (feeds the timeline with real events), local LLM for low-confidence classification + summaries.
+
+### How to test Sprint 2 today (no portal needed)
+1. node sprint2.mjs → npm install → npm run dev  (migration 0002 auto-runs)
+2. Select a company → Collect tab → **Import PDFs** → pick any MCA PDFs you have.
+3. They classify + file + index automatically. Switch to **Search** → query "director", "HDFC", etc.
+4. **Timeline** tab shows dated filings.
