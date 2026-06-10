@@ -90,3 +90,84 @@ it's testable WITHOUT the live portal — via the new **Import PDFs** button.
 2. Select a company → Collect tab → **Import PDFs** → pick any MCA PDFs you have.
 3. They classify + file + index automatically. Switch to **Search** → query "director", "HDFC", etc.
 4. **Timeline** tab shows dated filings.
+
+---
+## Session 7 — Sprint 3 (Structured intelligence) — BUILT & compiles ✅
+
+### What this unlocks
+Document text → real corporate events. The timeline now shows actual appointments,
+charges, and capital changes; a Findings tab surfaces them; and an executive summary
+is generated (local-LLM-enhanced, with a deterministic fallback).
+
+### New
+- `src/main/services/intelligence/extractors.ts` — rule-based director/charge/capital
+  extractors over document text. ✅ TESTED: DIR-12→appointment+DIN+name+date; CHG-1→HDFC ₹5cr created;
+  CHG-4→ICICI satisfied; SH-7→authorized ₹50L; PAS-3→equity allotment.
+- `src/main/db/intelligence.repo.ts` — persist + read director_events / charges / capital_events
+  (idempotent per source document — re-processing clears prior events first).
+- `src/main/services/ai/ollama.ts` — local LLM provider (private; graceful if absent).
+- `src/main/services/intelligence/summary.ts` — fact-grounded exec summary; LLM polishes when available.
+
+### Changed
+- `ingest.ts` runs the right extractor per eForm class after indexing.
+- ipc + preload (entities:directors/charges/capital, intelligence:summary), types.
+- `App.tsx` — Findings tab (directors/charges/capital) + Generate summary panel.
+
+### Build proof
+- typecheck clean; electron-vite build OK; entities/summary channels, extractors, ollama client,
+  and the three INSERTs all present in the bundle.
+
+### Local LLM (optional, private) — to enable AI-polished summaries:
+- Install Ollama (https://ollama.com), then: `ollama pull llama3.2`. Without it, summaries are
+  rule-based (still fact-complete). Override model via LEXVAULT_OLLAMA_MODEL.
+
+### KNOWN / next
+- Extractor patterns are tuned to representative eForm text; refine against real documents as
+  samples arrive (same as portal selectors). Charge-holder name can truncate at the entity suffix.
+- Still want live-portal capture HTML for Sprint 1B download selectors.
+
+### NEXT (Sprint 4): the money features — red-flag detection engine (rules + LLM) → red_flags table,
+  branded PDF diligence report export, ZIP/CSV/JSON export, semantic (embedding) search.
+
+### How to test Sprint 3 today (no portal)
+1. node sprint3.mjs → npm install → npm run dev
+2. Import PDFs (DIR-12 / CHG-1 / SH-7 / PAS-3 style docs) → Findings tab shows extracted events;
+   Timeline populates; Generate summary produces an exec summary.
+
+---
+## Session 8 — Sprint 4 (THE MONEY LAYER) — BUILT & compiles ✅
+
+### What this unlocks
+The sellable deliverable: red-flag scan → branded PDF diligence report → export pack
+(ZIP of the organised vault + CSV/JSON findings). Paste CIN → hand a partner a report.
+
+### New
+- `src/main/services/intelligence/redflags.ts` — rule engine with evidence_json per flag.
+  5 launch rules: CHARGE_OPEN (high ≥₹1cr), DIRECTOR_CHURN (2 exits ≤12mo),
+  ANNUAL_FILING_GAP (years missing AOC-4/MGT-7), CHARGE_NEAR_RAISE (charge ≤90d after
+  allotment), RECORD_INCOMPLETE (failed downloads). ✅ All 5 verified against a seeded DB.
+  Idempotent: re-scan replaces rule-generated flags; manual statuses preserved by design.
+- `src/main/services/export/report.ts` — branded A4 PDF via pdfkit: cover, exec summary
+  (LLM/rule), red flags (severity-coloured), directors, charges, capital, doc inventory,
+  audit note, page footers. ✅ Generated a real PDF and re-extracted it to verify content.
+  ✅ FIXED a pdfkit footer-pagination bug (blank pages doubled; zero bottom margin + lineBreak:false).
+- `src/main/services/export/bundle.ts` — findings → JSON + 5 CSVs; whole vault → ZIP via
+  bundled 7za. ✅ CSV escaping (commas/quotes/newlines) and zip flow tested.
+
+### Changed
+- ipc (+flags:detect/list, export:report/pack with reveal-in-Finder), preload + types,
+  App.tsx (Flags tab w/ severity badges; Scan/Summary/PDF report/Export pack buttons), css,
+  package.json (+pdfkit ^0.15.2, @types/pdfkit).
+
+### Build proof
+- typecheck clean; electron-vite build OK; all 5 rule codes + export channels + pdfkit in bundle.
+
+### NEXT (Sprint 5): hardening & launch — SQLCipher/keychain, audit viewer, code signing +
+  notarization (mac), installers, licensing. Plus pending: Sprint 1B portal selectors (need capture),
+  extractor tuning on real docs, OCR execution.
+
+### How to test Sprint 4 today
+1. node sprint4.mjs → npm install → npm run dev
+2. Select company with indexed docs → **Scan red flags** → Flags tab shows severity-graded findings.
+3. **PDF report** → generates + reveals the branded report in Finder.
+4. **Export pack** → ZIP + CSVs/JSON revealed in Finder.

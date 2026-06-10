@@ -1,12 +1,17 @@
 /**
  * ipc/index.ts — registers all IPC handlers. Thin: validate, call service, return data.
  */
-import { ipcMain, dialog } from 'electron'
+import { ipcMain, dialog, shell } from 'electron'
 import { listCompanies, createCompany, deleteCompany, getCompany, type NewCompany } from '../db/companies.repo'
 import { listDocuments, countsByState } from '../db/documents.repo'
 import { search, timeline } from '../db/search.repo'
 import * as session from '../services/mca/session'
 import { processCompany, ingestPdfFiles } from '../services/intelligence/ingest'
+import { listDirectorEvents, listCharges, listCapital } from '../db/intelligence.repo'
+import { generateSummary } from '../services/intelligence/summary'
+import { detectRedFlags, listRedFlags } from '../services/intelligence/redflags'
+import { generateReport } from '../services/export/report'
+import { exportPack } from '../services/export/bundle'
 
 export function registerIpc(): void {
   // companies
@@ -32,6 +37,24 @@ export function registerIpc(): void {
 
   // intelligence
   ipcMain.handle('intelligence:process', (_e, companyId: number) => processCompany(companyId))
+  ipcMain.handle('intelligence:summary', (_e, companyId: number) => generateSummary(companyId))
+  ipcMain.handle('entities:directors', (_e, companyId: number) => listDirectorEvents(companyId))
+  ipcMain.handle('entities:charges', (_e, companyId: number) => listCharges(companyId))
+  ipcMain.handle('entities:capital', (_e, companyId: number) => listCapital(companyId))
+
+  // red flags + export (the money features)
+  ipcMain.handle('flags:detect', (_e, companyId: number) => { detectRedFlags(companyId); return listRedFlags(companyId) })
+  ipcMain.handle('flags:list', (_e, companyId: number) => listRedFlags(companyId))
+  ipcMain.handle('export:report', async (_e, companyId: number) => {
+    const path = await generateReport(companyId)
+    shell.showItemInFolder(path)
+    return { path }
+  })
+  ipcMain.handle('export:pack', async (_e, companyId: number) => {
+    const res = await exportPack(companyId)
+    shell.showItemInFolder(res.files[res.files.length - 1])
+    return res
+  })
 
   // search + timeline
   ipcMain.handle('search:query', (_e, companyId: number, q: string) => search(companyId, q))

@@ -55,6 +55,12 @@ export interface TimelineEvent {
   document_id: number | null
 }
 
+export interface DirectorEventRow { name: string; din: string | null; event_type: string; designation: string | null; effective_date: string | null }
+export interface ChargeRow { holder_name: string | null; amount: number | null; status: string; created_on: string | null; satisfied_on: string | null }
+export interface CapitalRow { event_type: string; authorized_capital: number | null; paid_up_capital: number | null; instrument: string | null; effective_date: string | null }
+
+export interface RedFlagRow { id: number; severity: string; category: string; code: string; title: string; detail: string | null; status: string; created_at: string }
+
 export interface LexVaultAPI {
   companies: {
     list: () => Promise<Company[]>
@@ -68,6 +74,20 @@ export interface LexVaultAPI {
   }
   intelligence: {
     process: (companyId: number) => Promise<number>
+    summary: (companyId: number) => Promise<{ source: 'llm' | 'rule'; facts: string; summary: string }>
+  }
+  entities: {
+    directors: (companyId: number) => Promise<DirectorEventRow[]>
+    charges: (companyId: number) => Promise<ChargeRow[]>
+    capital: (companyId: number) => Promise<CapitalRow[]>
+  }
+  flags: {
+    detect: (companyId: number) => Promise<RedFlagRow[]>
+    list: (companyId: number) => Promise<RedFlagRow[]>
+  }
+  exporter: {
+    report: (companyId: number) => Promise<{ path: string }>
+    pack: (companyId: number) => Promise<{ dir: string; files: string[] }>
   }
   search: {
     query: (companyId: number, q: string) => Promise<SearchHit[]>

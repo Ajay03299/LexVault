@@ -14,7 +14,21 @@ const lexvault = {
     import: (companyId: number) => ipcRenderer.invoke('documents:import', companyId)
   },
   intelligence: {
-    process: (companyId: number) => ipcRenderer.invoke('intelligence:process', companyId)
+    process: (companyId: number) => ipcRenderer.invoke('intelligence:process', companyId),
+    summary: (companyId: number) => ipcRenderer.invoke('intelligence:summary', companyId)
+  },
+  entities: {
+    directors: (companyId: number) => ipcRenderer.invoke('entities:directors', companyId),
+    charges: (companyId: number) => ipcRenderer.invoke('entities:charges', companyId),
+    capital: (companyId: number) => ipcRenderer.invoke('entities:capital', companyId)
+  },
+  flags: {
+    detect: (companyId: number) => ipcRenderer.invoke('flags:detect', companyId),
+    list: (companyId: number) => ipcRenderer.invoke('flags:list', companyId)
+  },
+  exporter: {
+    report: (companyId: number) => ipcRenderer.invoke('export:report', companyId),
+    pack: (companyId: number) => ipcRenderer.invoke('export:pack', companyId)
   },
   search: {
     query: (companyId: number, q: string) => ipcRenderer.invoke('search:query', companyId, q)

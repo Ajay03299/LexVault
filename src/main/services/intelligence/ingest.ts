@@ -15,6 +15,8 @@ import { activity } from '../logger'
 import { extractPdfText } from '../extraction/pdf'
 import { indexDocument } from '../../db/search.repo'
 import { classify, ALL_FOLDERS } from '../../domain/eform-registry'
+import { extractDirectors, extractCharges, extractCapital } from './extractors'
+import { persistDirectorEvents, persistCharge, persistCapitalEvent } from '../../db/intelligence.repo'
 import { getDb } from '../../db/database'
 import {
   upsertDiscovered,
@@ -57,6 +59,7 @@ export async function processCompany(companyId: number): Promise<number> {
         continue
       }
       indexDocument(d.id, { title: d.title, formType: d.form_type, body: text, pages })
+      runExtractor(companyId, d.id, d.form_type, d.title, text)
       done++
       activity.info(`Indexed ${d.form_type ?? basename(d.organized_path!)} (${pages}p)`, { companyId })
     } catch (err) {
@@ -92,4 +95,30 @@ export async function ingestPdfFiles(
   activity.success(`Imported ${imported} PDF(s). Indexing…`, { companyId })
   await processCompany(companyId)
   return imported
+}
+
+/** Run the right structured extractor for a document based on its eForm class. */
+function runExtractor(companyId: number, documentId: number, formType: string | null, title: string | null, text: string): void {
+  const c = classify(formType, title, null)
+  switch (c.extractor) {
+    case 'directors': {
+      const evs = extractDirectors(text)
+      if (evs.length) { persistDirectorEvents(companyId, documentId, evs); activity.info(`+ ${evs.length} director event(s)`, { companyId }) }
+      break
+    }
+    case 'charges': {
+      const ch = extractCharges(text, formType)
+      persistCharge(companyId, documentId, ch)
+      activity.info(`+ charge ${ch.status}${ch.holderName ? ' · ' + ch.holderName : ''}`, { companyId })
+      break
+    }
+    case 'capital': {
+      const cap = extractCapital(text, formType)
+      persistCapitalEvent(companyId, documentId, cap)
+      activity.info(`+ capital ${cap.eventType}`, { companyId })
+      break
+    }
+    default:
+      break
+  }
 }
